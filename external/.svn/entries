@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="21437"
+   name=""
+   committed-date="2013-09-22T14:47:13.173376Z"
+   url="svn+ssh://zhu103@zed.cs.purdue.edu/p/sss/svn/MCPA/external"
+   last-author="zhu103"
+   kind="dir"
+   uuid="cfc9b378-9421-0410-8964-846f8f5da6ff"
+   repos="svn+ssh://zhu103@zed.cs.purdue.edu/p/sss/svn"
+   revision="22435"/>
+<entry
+   committed-rev="20704"
+   name="yices-1.0.38-x86_64-apple-darwin10.8.0.tar.gz"
+   text-time="2013-02-28T03:17:56.000000Z"
+   committed-date="2013-03-29T17:48:49.070568Z"
+   checksum="4c7945f1e11af7381189fcf8f86e3e3e"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:25.000000Z"/>
+<entry
+   name="yices"
+   kind="dir"/>
+</wc-entries>

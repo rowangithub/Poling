@@ -1,0 +1,173 @@
+// Vechev & Yahav DCAS linked list.
+//
+// See Figures 8 & 9 of
+//
+//    Vechev & Yahav.
+//    Deriving linerizable fine-grained concurrent objects.
+//    PLDI 2008.
+//
+
+// The verification of Vechev_DCAS_set does NOT enjoy Hindsight lemma.
+
+#include "set_spec.cav"
+
+class Node {
+  int val;
+  Node next;
+}
+
+Node head, Tail;
+
+resource r() {
+  // Specify the filtering function: 
+  //	all reachable nodes are considered data structure elements
+  //    i.e., if e is in the data structure (vals (Head)), 
+  //		  e is a reachable element.
+  setspec e << vals (head) => $$ Reach (e)	
+  constructor {
+    head = new();
+    head->val = -12345;
+    Tail = new();
+    Tail->val = 12345;
+    Tail->next = 0;
+    head->next = Tail;
+  }
+}
+
+// ---------------------------------------------------------
+// Insert an element into the set
+// ---------------------------------------------------------
+
+bool add(int key)
+// Specify a precondition
+requires -12345 < key && key < 12345
+// Specify the pure behavior of add method: 
+//	if key is already in the data structure, return 0 
+purespec r (key << vals (head.post) => Result = 0)
+// Specify the effectful behavior of this method
+// i.e., the union of key and the pre-state of the data structure
+// equals to the post-state of the data structure
+effspec r (key ++ vals (head.pre) = vals (head.post) )
+{
+  Node pred, curr, entry;
+  int k;
+  int k3; // <-- HACK: Make abstraction remember pred->val
+
+  while (true) {
+
+    pred = head;
+    with r { curr = head->next; }
+    k3 = -12345;
+    with r { k = curr->val; }
+  
+    while (k < key) {
+      pred = curr;
+      with r { curr = curr->next; 
+      if (curr == 0) break;
+      k3 = k;
+      k = curr->val; }
+    }
+    if (curr == 0) continue;
+
+    if (k == key) return false;
+
+    entry = new();
+    entry->val = key;
+    entry->next = curr;
+   
+    with r { 
+      if (pred->next == curr) {
+        assume (pred->next->next == curr->next); // <-- HACK: curr cannot be garbage collected (see entry)
+        pred->next = entry;
+      } 
+      else continue;
+    } 
+    k3 = k3;
+    return true;
+  }
+}
+
+// ---------------------------------------------------------
+// Remove an element from the set
+// ---------------------------------------------------------
+
+bool remove(int key)
+// Specify a precondition
+requires -12345 < key && key < 12345
+// Specify the pure behavior of remove method: 
+//	if key is not in the data structure, return 0 
+purespec r ((!(key << vals (head.post))) => Result = 0)
+// Specify the effectful behavior of this method
+// i.e., the union of key and the post-state of the data structure
+// equals to the pre-state of the data structure.
+// note: there are no duplicates in the data structure.
+effspec r (key ++ vals (head.post) = vals (head.pre) )
+{
+  Node pred, curr, next;
+  int k;
+
+  while (true) {
+
+    pred = head;
+    with r { curr = head->next; }
+    with r { k = curr->val; }
+  
+    while (k < key) {
+      pred = curr;
+      with r { curr = curr->next; 
+      if (curr == 0) break;
+      k = curr->val; }
+    }
+    if (curr == 0) continue;
+
+    if (k > key) { return false; }
+
+    with r { 
+      if (pred->next == curr) {
+        next = curr->next;
+        curr->next = 0, pred->next = next;
+      }
+      else continue;
+    } 
+
+    key = key; return true;
+  }
+}
+
+// ---------------------------------------------------------
+// Is the element in the set?
+// ---------------------------------------------------------
+
+bool contains(int key) 
+// Specify a precondition
+requires -12345 < key && key < 12345
+// Specify the pure behavior of contains method: 
+//	if key is in the data structure, return 1
+//	if key is not in the data structure, return 0 
+purespec r (key << vals (head.post) => Result = 1 && (!(key << vals (head.post))) => Result = 0)
+// This method has no effectful behavior
+effspec r (false)
+{
+  Node pred, curr, next;
+  int k;
+
+	while (true) {
+		pred = head;
+    	with r { curr = head->next; }
+    	with r { k = curr->val; }
+  
+    	while (k < key) {
+      		pred = curr;
+      		with r { 
+      			curr = curr->next; 
+      			if (curr == 0) break;
+      			k = curr->val; 
+      		}
+    	}
+    
+    	if (curr == 0) continue;
+
+		if (k == key) {return true;}
+		else {assume (k > key); return false;}
+	}
+}

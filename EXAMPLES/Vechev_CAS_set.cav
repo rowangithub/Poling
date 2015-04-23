@@ -1,0 +1,208 @@
+// Vechev & Yahav CAS linked list.
+//
+// See Figure 2 of
+//
+//    Vechev & Yahav.
+//    Deriving linerizable fine-grained concurrent objects.
+//    PLDI 2008.
+//
+
+// The verification of Vechev_CAS_set enjoys Hindsight lemma.
+
+#include "set_spec.cav"
+
+class Node {
+  int val;
+  bool marked;
+  Node next;
+}
+
+Node Head, Tail;
+
+resource r() {
+  // Specify the filtering function: 
+  //	all reachable non-marked nodes are considered data structure elements
+  //    i.e., if e is in the data structure (vals (Head)), 
+  //		  e is a reachable element and the marked field of e is set to 0.
+  setspec e << vals (Head) => ($$ Reach (e) && marked (e) = 0	)
+  constructor {
+    Head = new();
+    Head->val = -12345;
+    Head->marked = false;
+    Tail = new();
+    Tail->val = 12345;
+    Tail->marked = false;
+    Tail->next = 0;
+    Head->next = Tail;
+  }
+}
+
+bool contains(int key) 
+// Specify a precondition
+requires -12345 < key && key < 12345
+// Specify the pure behavior of contains method: 
+//	if key is in the data structure, return 1
+//	if key is not in the data structure, return 0 
+purespec r (key << vals (Head.post) => Result = 1 && (!(key << vals (Head.post))) => Result = 0)
+// This method has no effectful behavior
+effspec r (false)
+{
+  Node pred, curr;
+  int k;
+  
+  bool b1;
+
+  pred = Head;
+  with r { curr = Head->next; k = curr->val; b1 = curr->marked;}
+
+  while (k < key) {
+    pred = curr;
+    with r { curr = curr->next; k = curr->val; b1 = curr->marked;}
+  }
+
+  if (k == key && !b1) return true;
+  else if (k == key && b1) return false;
+  else { assume (k > key); return false; }
+
+}
+
+// ---------------------------------------------------------
+// Insert an element into the set
+// ---------------------------------------------------------
+
+bool add(int key)
+// Specify a precondition
+requires -12345 < key && key < 12345
+// Specify the pure behavior of this method: 
+//	if key is already in the data structure, return 0 
+purespec r (key << vals (Head.post) => Result = 0)
+// Specify the effectful behavior of add method:
+//   1. key is successfully added into the data structure
+//   i.e., the union of key and the pre-state of the data structure
+//   equals to the post-state of the data structure.
+//	 2. If the input data structure is sorted, the output data structure is also sorted
+effspec r (key ++ vals (Head.pre) = vals (Head.post) && ($$ sorted(Head.pre) => $$ sorted (Head.post))) 
+{
+  Node pred, curr, entry;
+  int k;
+  int k3; // <-- HACK: Make abstraction remember pred->val
+
+  bool b1;
+  
+  while (true) {
+
+    pred = Head;
+    with r { curr = Head->next; k = curr->val; b1 = curr->marked;}
+    k3 = -12345;
+   // with r { k = curr->val; }
+  
+    while (k < key) {
+      pred = curr;
+      k3 = k;
+      with r { curr = curr->next; 
+      k = curr->val; 
+      b1 = curr->marked;}
+    }
+    
+    
+	if (k == key && !b1) return false;
+	else if (k == key && b1) continue;
+   
+    with r { 
+      assume (k > key);
+      if (pred->next == curr && !pred->marked && !curr->marked) {
+      	entry = new();
+    	entry->val = key;
+    	entry->marked = false;
+    	entry->next = curr;
+        pred->next = entry;
+      } 
+      else continue;
+    } 
+    k3 = k3;
+    return true;
+  }
+}
+
+
+// ---------------------------------------------------------
+// Remove an element from the set
+// ---------------------------------------------------------
+
+bool remove(int key)
+// Specify a precondition
+requires -12345 < key && key < 12345
+// Specify the pure behavior of this method: 
+//	if key is not in the data structure, return 0 
+purespec r ((!(key << vals (Head.post))) => Result = 0)
+// Specify the effectful behavior of remove method:
+//   1. key is successfully removed from the data structure
+//   i.e., the union of key and the post-state of the data structure
+//   equals to the pre-state of the data structure.
+//   note: there are no duplicates in the data structure.
+//	 2. If the input data structure is sorted, the output data structure is also sorted
+effspec r (key ++ vals (Head.post) = vals (Head.pre) && ($$ sorted(Head.pre) => $$ sorted (Head.post))) 
+{
+  Node pred, curr, next;
+  int k;
+
+  while (true) {
+
+    pred = Head;
+    with r { curr = Head->next; 
+     k = curr->val; }
+  
+    while (k < key) {
+      pred = curr;
+      with r { curr = curr->next; 
+      k = curr->val; }
+    }
+
+    if (k > key) return false;
+
+    with r { next = curr->next; }
+
+    with r { 
+      if (curr->next == next && !curr->marked) {
+        curr->marked = true;
+      }
+      else continue;
+    } 
+
+    with r { 
+      if (pred->next == curr && !pred->marked) {
+        assume (curr->val == key);
+        pred->next = next;
+      }
+      else continue;
+    } 
+    return true;
+  }
+}
+
+
+// ---------------------------------------------------------
+// Is the element in the set?
+// ---------------------------------------------------------
+// 
+// bool contains(int key) 
+//   requires -12345 < key && key < 12345
+// {
+//   Node pred, curr;
+//   int k;
+// 
+//   pred = Head;
+//   with r { curr = Head->next; }
+//   with r { k = curr->val; }
+// 
+//   while (k < key) {
+//     pred = curr;
+//     with r { curr = curr->next; }
+//     with r { k = curr->val; }
+//   }
+// 
+//   if (k == key) return true;
+//   else return false;
+// 
+// }
+

@@ -1,0 +1,57 @@
+// Concurrent set specification
+
+class SetPtr { set val; }
+SetPtr ABS;
+
+// -----------------------------------------------------------------------------
+// Constructor
+// -----------------------------------------------------------------------------
+
+void init_ABS()
+  ensures  ABS|->val:@set()
+{
+  ABS = new();
+  ABS->val = @set();
+}
+
+// -----------------------------------------------------------------------------
+// Insert an element into the set
+// -----------------------------------------------------------------------------
+
+bool ABS_add(int key)
+{
+  if (@subset(@item(key), ABS->val)) {
+    return false;
+  } else {
+    ABS->val = @set(@item(key), ABS->val);
+    return true;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Remove an element from the set
+// -----------------------------------------------------------------------------
+
+bool ABS_remove(int key)
+{
+  if (@subset(@item(key), ABS->val)) { 
+    ABS->val = @minus(ABS->val, @item(key));
+    return true;
+  } else {
+    return false;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Is the element in the set?
+// -----------------------------------------------------------------------------
+
+bool ABS_contains(int key)
+{
+  if (@subset(@item(key), ABS->val)) { 
+    return true;
+  } else {
+    return false;
+  }
+}
+

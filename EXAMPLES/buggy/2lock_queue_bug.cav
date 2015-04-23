@@ -1,0 +1,94 @@
+// Insert a bug in line 87
+
+#include "queue_spec.cav"
+
+class Node {
+  int val;
+  Node tl;
+}
+
+class Queue {
+  Node head;
+  Node tail;
+  thread_id hlock;
+  thread_id tlock;
+}
+
+Queue Q;
+
+resource r {
+  // Specify the filtering function: 
+  //	all reachable nodes are considered data structure elements
+  //    i.e., if e is in the data structure (vals (Head)), 
+  //		  e is a reachable element.
+  setspec e << vals (Q.head) => $$ Reach (e)	
+  constructor {
+    Node node;
+    node = new();
+    node->tl = NULL;
+    Q = new();
+    Q->head = node;
+    Q->tail = node;
+    Q->hlock = 0;
+    Q->tlock = 0;
+  }
+
+}
+
+// -----------------------------------------------------------------------------
+// Enqueue an element
+// -----------------------------------------------------------------------------
+
+void enqueue(int value)
+// This method has no pure behavior
+purespec r (false)
+// Specify the effectful behavior of enqueue method
+// i.e., the concatenation of the pre-state of the data structure and value
+// equals to the post-state of the data structure
+// The concatenation operator denotes that value is put in the end of the queue. 
+effspec r (vals_c (Q.prehead) :: value = vals_c (Q.posthead) )
+{
+  Node node, temp;
+  node = new();	
+  node->val = value;
+  node->tl = NULL;
+  with r when (Q->tlock==0 && Q->tail->tl==0 /*HACK!*/)  { Q->tlock = TID; }
+  with r { temp = Q->tail; } 
+  with r { temp->tl = node; }
+  with r { Q->tail = node; }
+  with r { Q->tlock = 0; }
+  return;
+}
+
+// -----------------------------------------------------------------------------
+// Dequeue an element
+// -----------------------------------------------------------------------------
+
+int dequeue()
+// Specify the pure behavior of this method: 
+//	if the data structure is empty, return EMPTY
+purespec r ((Q.head.posttl == 0) => Result = EMPTY)
+// Specify the effectful behavior of dequeue method
+// i.e., the concatenation of value and the post-state of the data structure
+// equals to the pre-state of the data structure.
+effspec r (val(Q.prehead) :: vals_c (Q.posthead) = vals_c (Q.prehead) )
+{
+  Node node, new_head;
+  int value;
+  with r when (Q->hlock==0) { Q->hlock = TID; }
+  with r { node = Q->head; }
+  with r { new_head = node->tl;	}
+  if (new_head == NULL) {
+    with r { Q->hlock = 0; }
+    assume (new_head == NULL);
+    return EMPTY;
+  } else {
+    with r { value = new_head->val; }
+    //with r { Q->head = new_head; }   //<============== Insert a bug that cancels dequeue.
+    with r { Q->hlock = 0; }
+    assume (node != NULL);
+    //dispose(node);
+    return value;
+  } 
+} 
+

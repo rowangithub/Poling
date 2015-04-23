@@ -1,0 +1,66 @@
+// Concurrent queue specification
+
+int EMPTY;
+class ListPtr { list val; }
+ListPtr ABS;
+
+// -----------------------------------------------------------------------------
+// Constructor
+// -----------------------------------------------------------------------------
+
+void init_ABS () 
+  ensures ABS|->val:@list()
+{
+  ABS = new();
+  ABS->val = @list();
+}
+
+// -----------------------------------------------------------------------------
+// Enqueue one element
+// -----------------------------------------------------------------------------
+
+void ABS_enqueue(int value) 
+{
+  ABS->val = @list(ABS->val,@item(value));
+}
+
+// -----------------------------------------------------------------------------
+// Dequeue one element (non-blocking)
+// -----------------------------------------------------------------------------
+
+int ABS_dequeue() 
+{
+  int abs_res;
+  if (ABS->val == @list()) { return EMPTY; }
+  else { 
+    abs_res = @hd(ABS->val);
+    ABS->val = @tl(ABS->val);
+    return abs_res;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Dequeue one element (blocking)
+// -----------------------------------------------------------------------------
+
+int ABS_wait_dequeue() 
+{
+  int abs_res;
+  assume (ABS->val == @list());
+  abs_res = @hd(ABS->val);
+  ABS->val = @tl(ABS->val);
+  return abs_res;
+}
+
+// -----------------------------------------------------------------------------
+// Is the queue empty? 
+// -----------------------------------------------------------------------------
+
+bool ABS_is_empty()
+{
+  if (ABS->val == @list()) 
+    return true;
+  else 
+    return false;
+}
+

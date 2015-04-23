@@ -1,0 +1,1 @@
+Head != Tail * lseg (next; Head, last) * lseg (next; last, Tail) * Tail |-> data:0,next:0

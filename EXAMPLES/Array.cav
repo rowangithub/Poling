@@ -1,0 +1,22 @@
+//##########################################
+//This program is linearizable because there is no protection for concurrency.
+
+class IntPtr { int val; }
+
+// -----------------------------------------------------------------------------
+// Enqueue
+// -----------------------------------------------------------------------------
+
+void test(int x)
+{
+  IntPtr a;
+  int i;
+  a = new IntPtr (100);
+  i = 0;
+  while (i < x) {
+    (a + i)->val = 5;
+    i = i + 1;
+  }
+  if ((a + 5)->val != 5) { (0 as IntPtr)->val = 0; }
+}
+

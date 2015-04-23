@@ -1,0 +1,166 @@
+// Insert a bug in line 159 and line 163
+
+
+
+// This algorithm does not leak any memory.
+// (Run poling/cave with option -no_leaks)
+// If you do not use -no_leaks, an unsolved bug of poling/cave would be exposed.
+
+#include "set_spec.cav"
+
+class Node {
+  thread_id lk;
+  int val;
+  Node tl;
+}
+
+Node head, tail;
+
+resource r() {
+  // Specify the filtering function: 
+  //	all reachable nodes are considered data structure elements
+  //    i.e., if e is in the data structure (vals (Head)), 
+  //		  e is a reachable element.
+  setspec e << vals (head) => $$ Reach (e)
+  constructor {
+    tail = new();
+    tail->val = 12345;
+    tail->tl = 0;
+    head = new();
+    head->val = -12345;
+    head->tl = tail;
+  }
+}
+
+
+// ---------------------------------------------------------
+// Insert an element into the set
+// ---------------------------------------------------------
+
+bool add(int key)
+// Specify a precondition
+requires -12345 < key && key < 12345
+// Specify the pure behavior of add method: 
+//	if key is already in the data structure, return 0 
+purespec r (key << vals (head.post) => Result = 0)
+// Specify the effectful behavior of add method:
+//   1. key is successfully added into the data structure
+//   i.e., the union of key and the pre-state of the data structure
+//   equals to the post-state of the data structure.
+//	 2. If the input data structure is sorted, the output data structure is also sorted
+effspec r (key ++ vals (head.pre) = vals (head.post) && ($$ sorted(head.pre) => $$ sorted (head.post))) 
+{
+  Node prev, curr, temp2; 
+  int temp;
+  prev = head;
+  with r when (prev->lk == 0) { prev->lk = TID; } 
+  with r { curr = prev->tl; } 
+  with r { temp = curr->val; }
+  while(temp<key) {
+    with r when (curr->lk == 0) { curr->lk = TID; }
+    with r { prev->lk = 0; }
+    prev = curr;
+    with r { curr = prev->tl; }
+    with r { temp = curr->val; }
+  }
+  if (temp>key) {
+    with r when (curr->lk == 0) { curr->lk = TID; }
+    temp2 = new();
+    temp2->lk = 0;
+    temp2->val = key;
+    temp2->tl = curr;
+    with r { prev->tl = temp2; }
+    with r { prev->lk = 0; }
+    with r { curr->lk = 0; }
+    return true;
+  } else {
+    with r { prev->lk = 0; }
+    assume (temp == key);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------
+// Remove an element from the set
+// ---------------------------------------------------------
+
+bool remove(int key)
+// Specify a precondition
+requires -12345 < key && key < 12345
+// Specify the pure behavior of this method: 
+//	if key is not in the data structure, return 0 
+purespec r ((!(key << vals (head.post))) => Result = 0)
+// Specify the effectful behavior of remove method:
+//   1. key is successfully removed from the data structure
+//   i.e., the union of key and the post-state of the data structure
+//   equals to the pre-state of the data structure.
+//   note: there are no duplicates in the data structure.
+//	 2. If the input data structure is sorted, the output data structure is also sorted
+effspec r (key ++ vals (head.post) = vals (head.pre) && ($$ sorted(head.pre) => $$ sorted (head.post))) 
+{ 
+  Node prev, curr, temp2;
+  int temp;
+  prev = head;
+  with r when (prev->lk == 0) { prev->lk = TID; }
+  with r { curr = prev->tl; } 
+  with r { temp = curr->val; }
+  while(temp<key) {
+    with r when (curr->lk == 0) { curr->lk = TID; }
+    with r { prev->lk = 0; }
+    prev = curr;
+    with r { curr = prev->tl; }
+    with r { temp = curr->val; }
+  }
+  if (temp==key) {
+    with r when(curr->lk == 0) { curr->lk = TID; }
+    with r { temp2 = curr->tl; }
+    assume (temp == key);
+    with r { prev->tl = temp2; }
+    dispose(curr);
+    with r { prev->lk = 0; }
+    return true;
+  } else {
+    with r { prev->lk = 0; }
+    assume (temp > key);
+    return false;
+  }
+}
+
+// ---------------------------------------------------------
+// Is the element in the set?
+// ---------------------------------------------------------
+
+bool contains(int key)
+// Specify a precondition
+requires -12345 < key && key < 12345
+// Specify the pure behavior of contains method: 
+//	if key is in the data structure, return 1
+//	if key is not in the data structure, return 0 
+purespec r (key << vals (head.post) => Result = 1 && (!(key << vals (head.post))) => Result = 0)
+// This method has no effectful behavior
+effspec r (false)
+{ 
+  Node prev, curr, temp2;
+  int temp;
+  prev = head;
+  with r when (prev->lk == 0) { prev->lk = TID; }
+  with r { curr = prev->tl; } 
+  with r { temp = curr->val; }
+  while(temp<key) {
+    with r when (curr->lk == 0) { curr->lk = TID; }
+    with r { prev->lk = 0; }
+    prev = curr;
+    with r { curr = prev->tl; }
+    with r { temp = curr->val; }
+  }
+  if (temp==key) {
+    with r { prev->lk = 0; }
+    assume (temp == key);
+    return false;                //<=========Insert a bug that reverses return value from true to false
+  } else {
+    with r { prev->lk = 0; }
+    assume (temp > key);
+    return true;                 //<=========Insert a bug that reverses return value from false to true
+  }
+}
+

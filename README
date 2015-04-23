@@ -1,0 +1,283 @@
+Poling: SMT Aided Linearizability Proofs
+Poling is built on top of CAVE and shares the same license with CAVE 
+
+Contact: He Zhu, Department of Computer Science, Purdue University
+Email: zhu103@purdue.edu
+
+===[ Installation ]===================================================
+
+************************
+If you get Poling in a virtual machine, you can skip this step.
+************************
+
+You will need: 
+
+* ocaml compiler (tested with version >= 3.12)
+* C preprocessor (e.g., cpp)
+* make
+* Yices
+
+Download yices from http://yices.csl.sri.com/download.shtml
+(NOTE: Be sure to download the version with GMP dynamically linked!)
+
+In the top-level directory, untar yices with:
+  tar zxvf [path to yices tar] --strip-components 1 -C external/yices
+(NOTE: We already include Yices for MacOS X (64bits) under external/yices
+for other platforms please go to the above link for your own version)
+
+To build the decision procedure (Yices) used by Poling, 
+run "make libs" in the distribution directory.
+
+To build Poling, run "make" in the distribution directory.
+
+
+===[ Basic usage and benchmarks]============================================
+
+There are two basic forms of usage; from this directory,
+
+1. Proving linearizability by the Poling algorithm (from our paper):
+
+  cpp EXAMPLES/2lock_queue.cav | ./poling -mcpa_linear
+
+2. Proving linearizability by the CAVE algorithm (from CAVE):
+
+  cpp EXAMPLES/2lock_queue.cav | ./poling -linear 
+
+
+To get the list of available command-line options, run "./poling -help"
+
+
+All our benchmarks are under EXAMPLES/ directory. 
+
+All our benchmarks can be run following the above instructions except HSY_stack and 
+LockCoupling_set.
+
+For LockCoupling_set.cav, you need to additionally provide a "-no_leaks" argument:
+
+  cpp EXAMPLES/LockCoupling_set.cav | ./poling -mcpa_linear -no_leaks
+
+The reason is that CAVE needs to skip memory checks for it (not related to our work).
+
+For HSY_stack.cav, you must provide Poling a data structure invariant. To do so, you can try:
+
+  cpp EXAMPLES/HSY_stack.cav | ./poling -mcpa_linear -ifile EXAMPLES/HSY_stack.inv
+
+(We have already specified the invariant required in HSY_stack.inv 
+and please check HSY_stack.cav for more explanations about why the invariant is needed).
+
+===[ Buggy benchmarks ]====================================================
+
+We also include a set of buggy programs (which are not linearizable implementations) in 
+EXAMPLE/buggy/ directory. We give why the program is buggy in the comment in beginning of 
+the program text and Poling is able to disprove such programs.
+
+===[ Output ]====================================================
+
+The output of the tool can be found from the command lines. 
+
+For linearizable implementation, we show "Valid" and program locations where
+linearizability is witnessed.
+
+For non-linearizable implementation we show "Not Valid" and the error program locations.
+
+There is no specific log-file for Poling; all results are available from the command lines.
+
+
+===[ Specifications ]====================================================
+
+The user of Poling can refer to CAVE's manual to understand the syntax of our
+programming language (which is actually quite self-understandable). 
+
+The user of Poling may need to present 3 kinds of annotations in order to let 
+Poling work. The benchmarks under EXAMPLES/ were already properly annotated by 
+us with comments and hence can be used to guide the user to annotate new programs.
+
+1. vals function definition (page 7).
+
+This recursive abstraction definition represents the set of elements that
+inhabit the data structure. In the paper (Fig 3), we let vals function return
+all memory locations reachable for the data structure. This simple definition
+works for most of our benchmarks. For example, in the Optimistic_set.cav file,
+----------------------------------------------------------------------
+resource r() {
+  // Specify the filtering function: 
+  //	all reachable nodes are considered data structure elements
+  //    i.e., if e is in the data structure (vals (Head)), 
+  //		  e is a reachable element.
+  setspec e << vals (Head) => $$ Reach (e)
+  constructor {
+    Head = new();
+    Head->val = -12345;
+    Head->marked = false;
+    Tail = new();
+    Tail->val = 12345;
+    Tail->marked = false;
+    Tail->next = 0;
+    Head->next = Tail;
+  }
+}
+-------------------------------------------------------------------------
+We use "setspec" to define the vals function. This specification should be read
+as, if an element e is in the data structure pointed by Head (e << vals (Head)),
+then e must be an reachable elements (from Head), i.e., Reach (e) holds.
+
+We do consider reachable locations that are logically detached. For example, in 
+the lazy_set algorithm (Fig 10), the program uses a marked field (marked with 1) 
+to represent values that are considered not to be part of the data structure but 
+are still physically reachable. For example, in the Lazy_set.cav file,
+-------------------------------------------------------------------------
+resource r() {
+  // Specify the filtering function: 
+  //	all reachable non-marked nodes are considered data structure elements
+  //    i.e., if e is in the data structure (vals (Head)), 
+  //		  e is a reachable element and the marked field of e is set to 0.
+  setspec e << vals (Head) => ($$ Reach (e) && marked (e) = 0	)
+  constructor {
+    Tail = new();
+    Tail->val = 12345;
+    Tail->next = 0;
+    Head = new();
+    Head->val = -12345;
+    Head->next = Tail;
+  }
+}
+-------------------------------------------------------------------------
+We also use "setspec" to define the vals function. This specification should be 
+read as, if an element e is in the data structure pointed by Head (e << vals (Head)),
+then e must be both an reachable elements (from Head) and the marked field of e
+is set to 0.
+
+The users of Poling can specify the vals function according to the semantics of
+their data structure using the "setspec" annotation. Generally, If a field of the 
+data structure, say f, is used to distinguish element that logically removed, then 
+f (e) can be referred in the specification to notify Poling to filter removed elements 
+in the results of vals function (e.g., marked(e) = 0 in the Lazy_set annotation).
+
+
+2. Abstract specification.
+
+Programmer must provide abstract specification Varphi for each data structure function 
+(page 8). Poling then checks whether the abstract specification of a function can be 
+satisfied by the function's implementation in concurrent settings.
+
+We allow two classes of abstract specification:
+2.1) abstract specification for set (list):
+The definition of set specification is given in page 6 of the paper. For example,
+consider the set add function,
+-----------------------------
+bool add (int key) 
+requires -12345 < key && key < 12345
+purespec r (key << vals (Head.post) => Result = 0)
+effspec r (key ++ vals (Head.pre) = vals (Head.post))
+{ ... }
+-----------------------------
+In the specifications, we use Head.pre to denote the state before executing
+the function add, and Head.post for the state after executing add.
+
+We use "purespec" to define the non-effectful specification of the add function:
+if key is already in the data structure, the function simply returns 0.
+
+We also use "effspec" to define the effectful specification of the add function:
+the element key is successfully added into the data structure, i.e., the union of 
+key and the pre-state of the data structure equals to the post-state of the data 
+structure.
+
+Note that "purespec" specifies that the function does not change the state of the 
+data structure while "effspec" specifies the function must update the state of the 
+data structure in the proper way that the specification stipulates. 
+
+2.2) abstract specification for queue and stack:
+This kind of specification is defined as Order preserving specification, explained
+in page 6 of the paper. It uses concatenation operator (::) instead of union (++)
+as above. We can use it to capture the behavior of data structures whose temporal 
+behavior imposes ordering on the list of its elements (queue and stack). To distinguish 
+with the set specification case, we use "vals_c" (c for concatenation) to denote the 
+vals function in an order preserving specification. 
+
+For example, consider the following dequeue function.
+-----------------------------
+int dequeue ()
+purespec r ((Q.head.posttl == 0) => Result = EMPTY)
+effspec r (pval :: vals_c (Q.head.posttl) = vals_c (Q.head.pretl) ) 
+{ ...; return pval; }
+-----------------------------
+In the specifiations, we use Q.head.posttl to denote the state before executiong
+the function dequeue (here Q.head.tl points to the queue).
+
+We still use "purespec" to define the non-effectful specification of the dequeue function:
+if the data structure is empty, the function should return EMPTY.
+
+We still use "effspec" to define the effectful specification of the dequeue function:
+the concatenation of pval and the post-state of the data structure equals to the pre-state 
+of the data structure. Importantly, we explicitly require pval must originally be the
+first element in the queue.
+
+Changing the specification to 
+effspec r (vals_c (Q.head.posttl) :: pval = vals_c (Q.head.pretl) ) 
+should fail linearizability verification.
+
+Note that for functions that only return "void", we translate the concatenation operator (::)
+in its specification to the union operator (++) and hence do not verify its order preserving
+behavior. This is sound due to the definition of linearizability which always tries to find
+an order from function inputs to outputs (a "void" output should be pretty easy to order).
+
+The users of Poling can define the specifications for the functions in their data structures,
+following our conventions. Actually, our benchmarks have already included all the specifications 
+for set, queue and stack.
+
+3. Annotations for Descriptors (used in helping scenario).
+
+Thread descriptors are used to keep information about ongoing invocations performed by 
+different threads. And a thread can acknowledge its concurrent threads through 
+its descriptors which are used by the concurrent threads to complete helping
+(Section 4). We require users to annotate the descriptor data structure, indicating 
+the fields for an operation’s name, the parameters and the return value resp.
+
+For example, consider the elimination based HSY_stack algorithm (in the file HSY_stack.cav).
+We instrument the descriptor structure: 
+---------------------------------------------
+class ThreadInfo
+thread_desc (data == v && data == return_v && val == tid && op == tname && mytid == mytid)
+{ 
+  int val; // represent thread id
+  bool op; // represent Push or Pop
+  bool marked; // represent whether linearized
+  int data; // represent Push parameter or Pop return
+  
+  ThreadInfo tl; // thread descriptor as linked list
+}
+
+void push (ThreadInfo push_desc, int mytid, int v) 
+purespec r (false)
+effspec s (v :: vals_c (TOP.preval) = vals_c (TOP.postval) )
+{ ... }
+
+int pop (ThreadInfo pop_desc, int mytid) 	
+purespec s (val(TOP) = 0 => Result = EMPTY)
+effspec s (return_v :: vals_c (TOP.postval) = vals_c (TOP.preval))
+{ ... }
+-----------------------------------------------
+We use "thread_desc" to specify the thread descriptor for elimination based stacks. 
+In the specification, "return_v", "tid", "tname" and "mytid" (in the right side 
+of the equations) are our predefined key-words to define the purpose of the fields 
+in the descriptor data structure. 
+
+The "thread_desc" annotation also maintains a mapping from function arguments to the 
+corresponding fields in descriptor data structure. For example, in the HSY_stack program, 
+"data == v" means the data field represents the parameter of the push function (see the 
+signature of the push function above).
+
+In this example, we also specify that the "data" field is used to represent the
+return value of the (pop) function ("data == return_v"); the "op" field is used to 
+enumerate operation names (either push or pop for HSY_stack); the "val" filed is 
+instrumented for denoting thread identifier. Note that "mytid" specially encodes the 
+variable that represents the thread identifier of the operation under verification and 
+should be consistent with what is actually used in the program. For example, consider 
+the operation push's signature, push (ThreadInfo desc, int mytid, int v), where mytid 
+is the thread identifier for the push operation.
+
+The users of Poling can instrument the thread descriptors in their own programs using 
+the "thread_desc" annotation and all the key-words introduced above ("return_v", "tid",
+"tname", ...) together with the mapping from the function arguments to corresponding
+fields in the descriptor structure, following our convention. These should suffice to 
+verify concurrent data structures that rely on cooperative updates (helping).

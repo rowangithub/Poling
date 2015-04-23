@@ -1,0 +1,92 @@
+// Insert a buggy specification in line 71
+
+#include "stack_spec.cav"
+
+class Node {
+  Node tl;
+  int val;
+}
+
+class NodePtr { 
+  Node val; 
+}
+
+NodePtr TOP;
+
+resource r() {
+  // Specify the filtering function: 
+  //	all reachable nodes are considered data structure elements
+  //    i.e., if e is in the data structure (vals (Head)), 
+  //		  e is a reachable element.
+  setspec e << vals (TOP.val) => $$ Reach (e)	
+  constructor 
+  {
+    TOP = new();
+    TOP->val = 0;
+  }
+}
+
+// -----------------------------------------------------------------------------
+// Push an element onto the stack
+// -----------------------------------------------------------------------------
+
+void push(int e) 
+// This method has no pure behavior
+purespec r (false)
+// Specify the effectful behavior of push method
+// i.e., the concatenation of e and the pre-state of the data structure
+// equals to the post-state of the data structure
+// The concatenation operator denotes that e is put in the front of the stack.
+effspec r (e :: vals_c (TOP.preval) = vals_c (TOP.postval) )
+{
+  Node y, n; 
+  y = new();
+  y->val = e;
+  while(true) {
+    with r { n = TOP->val; }
+    y->tl = n;
+
+    with r {
+      if (TOP->val == n) {
+        TOP->val = y;
+	break;
+      }
+    } 
+  }
+  return;
+}
+
+// -----------------------------------------------------------------------------
+// Pop an element off the stack
+// -----------------------------------------------------------------------------
+
+int pop() 
+// Specify the pure behavior of this method: 
+//	if the data structure is empty, return EMPTY
+purespec r (val(TOP) = 0 => Result = EMPTY)
+// Specify the effectful behavior of pop method
+// i.e., the concatenation of val(y) and the post-state of the data structure
+// equals to the pre-state of the data structure.
+// The concatenation operator denotes that val(y) is chosen as the first in the stack.
+effspec r (vals_c (TOP.postval) :: val (y) = vals_c (TOP.preval) )  //<------------------Insert a buggy specification.
+{
+  Node y,z;
+  while(true) 
+  {
+    with r { y = TOP->val; }
+    if (y==0) {
+      return EMPTY;
+    } else {
+      with r { z = y->tl; }
+
+      with r {
+        if (TOP->val == y && y->tl == z) {
+          TOP->val = z;
+          break;
+        }
+      }
+    }
+  }
+  with r { return y->val; }
+}
+

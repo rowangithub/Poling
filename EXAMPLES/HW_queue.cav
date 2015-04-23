@@ -1,0 +1,85 @@
+#include "queue_spec.cav"
+
+//##########################################
+// You must run this file by: 
+// cpp EXAMPLES/HW_queue.cav | ./poling -mcpa_linear -ifile EXAMPLES/HW_queue.inv
+// HW_queue.inv specifies a data structure invariant: the data structure pointed by Head is a list
+// It MUST be provided because CAVE fails to infer it
+// The result without it is unsound
+
+class Node {
+  int data;
+  Node next;
+}
+
+Node Head, Tail, last;
+
+resource r() {
+  // Specify the filtering function: 
+  //	all reachable non-zero nodes are considered data structure elements
+  setspec e << datas (Head) => ($$ Reach (e) && data (e) != 0	)
+  constructor {
+    Head = new();
+    Head->data = 0;
+    Tail = new();
+    Tail->data = 12345;
+    Tail->next = 0;
+    Head->next = Tail;
+    last = Head;
+  }
+}
+
+void enque (int x) 
+// Specify a precondition
+requires x > 0
+// This method has no pure behavior
+purespec r false
+// Specify the effectful behavior of this method
+effspec r (datas (Head.pre) ++ x = datas (Head.post) ) 
+{
+    Node curr;
+    with r {  
+    	curr = last;
+    	last = last->next; 
+    }
+    
+    with r {
+    	assume (curr->data == 0);
+    	curr->data = x;
+    }
+    return;
+}
+
+int dequeue ()
+// This method has no pure behavior
+purespec r false
+// Specify the effectful behavior of this method
+effspec r (x :: datas_c (Head.post) = datas_c (Head.pre) ) 
+{
+	Node pred, curr, currlast;
+	int x, y, temp;
+	
+	int k3, k;
+	
+	x = 0;
+	
+	while (true) {
+    	curr = Head;
+		currlast = last;
+    	while (curr != currlast) {
+      		
+      		with r { 
+      			temp = x;	
+      			x = curr->data; 
+      			curr->data = temp;
+      		}	
+    
+    		if (x != 0) return x;
+    		
+      		with r {	
+      			curr = curr->next; 
+      		}
+    	}
+    }
+}
+

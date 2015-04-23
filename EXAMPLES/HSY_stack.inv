@@ -1,0 +1,1 @@
+Head != Tail * lseg (Head,Tail,@list(@item(0),_z)) * Tail |-> val:12345,next:0

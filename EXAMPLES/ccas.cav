@@ -1,0 +1,140 @@
+//##########################################
+//CCAS simplifies RDCSS 
+//Notably, run CAVE for CCAS is meaningless. 
+//CAVE define abstract data structure for verifying simulation while
+//we do not provide such an abstract data structure for CCAS because 
+//we know CAVE is unable to verify it anyway.
+//The CAVE output for this benchmark thus is unsound because of an empty
+//abstract data structure definition
+
+class ThreadDescriptor // thread descriptor
+// We use the annotation inside the following parentheses to define
+// the meaning of fields. To this end, in CCAS, we define a mapping 
+// from descriptor fields to the variables used in the specification. 
+// Additionally, we let the tool know TID is used to represent thread id for current verifying thread
+thread_desc (o == po && n == pn && val == tid && mytid=TID)
+{
+	thread_id val;
+	int o; // expected old value
+	int n; // new value
+}
+
+class SV { // Shared variable
+	int val;
+	bool flag;
+}
+
+class SD { // Shared thread descriptor
+	ThreadDescriptor val; // val is to see whether a thread descriptor can be seen
+}
+
+SV s;
+SD desc;
+
+resource t () {
+	// Specify the filtering function:
+	// Notably, CCAS operation on node only; the filtering function is undefined here
+	setspec true
+	constructor {
+		// s is shared variables
+		s = new ();
+		desc = new ();
+		desc->val = NULL;
+		s->flag = true;
+	}
+}
+
+void SetFlag (bool b) {
+	with t {s->flag = b;}
+}
+
+int ccas (int po, int pn) 
+// Specify the pure behavior of this method
+purespec t (false)
+// Specify the effectful behavior of this method
+effspec t ((val(desc.pre) = X) => ((flag(s) != 0 => (o(X) = po && val(s.post)= n(X))) && (flag(s) = 0 => (o(X) = po && val(s.post) = o(X)))))
+{
+	ThreadDescriptor r, d, temp;
+	int old;
+	bool b;
+	
+	d = new ThreadDescriptor ();
+	d->val = TID;
+	d->o = po;
+	d->n = pn;
+	
+	with t {
+		old = s->val;
+		if (old == po) {
+			desc->val = d;    // As expected, so acclaim a.
+			r = NULL; // So no need to care others.
+		} else {
+			r = desc->val;    // Need to think if others are acclaiming.
+		}
+	}
+	
+	while (r != NULL) {
+		// Complete (r);
+		with t { b = s->flag; }
+		if (b) {
+			with t {
+				if (desc->val == r) {
+					s->val = r->n, desc->val = NULL;
+				} else {
+				}
+			}
+		}
+		else {
+			with t {
+				if (desc->val == r) {
+					s->val = r->o, desc->val = NULL;
+				} else {
+				}
+			}
+		}
+		//b = b;
+		// Go on to help others or ready to execute for itself.
+		with t {
+			old = s->val;
+			if (old == po) {
+				desc->val = d;    // As expected, so acclaim a.
+				r = NULL; // So no need to care others.
+			} else {
+				r = desc->val;    // Need to think if others are acclaiming.
+			}
+		}
+	}
+	// Execute for itself.
+	while (true) {
+		if (old == po) { // Complete (d);
+			with t {b = s->flag;}
+			if (b) {
+				with t {
+					//temp = desc->val;
+					if (desc->val == d) {
+					    //assume (temp == d);			
+						s->val = d->n, desc->val = NULL; 
+						assume (po == old);
+						return old; // Complete by itself
+					} 
+					else {assume (desc->val != d) ; 
+					return old;}
+				}	
+				//if (temp != d) {
+				//	return old;
+				//}
+			}
+			else {
+				with t {
+					if (desc->val == d) {
+						s->val = d->o, desc->val = NULL;
+						assume (old == po);
+						return old; // Complete by itself
+					} else {assume (desc->val != d);
+						return old; // helped by others
+					}
+				}
+			}
+		}
+	}
+}

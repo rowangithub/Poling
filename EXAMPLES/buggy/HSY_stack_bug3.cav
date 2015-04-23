@@ -1,0 +1,318 @@
+// Insert a bug at line 180.
+
+#include "stack_spec.cav"
+
+//##########################################
+// You must run this file by: 
+// cpp EXAMPLES/buggy/HSY_stack_bug3.cav | ./poling -mcpa_linear -ifile EXAMPLES/buggy/HSY_stack.inv
+// HSY_stack.inv specifies a data structure invariant: the elimination layer pointed by Head is a list
+// It MUST be provided because CAVE fails to infer it
+// The result without it is unsound
+
+class Node {
+  Node tl;
+  int val;
+}
+
+class NodePtr { 
+  Node val; 
+}
+
+NodePtr TOP;
+
+resource s () {// Stack declaration
+  // Specify the filtering function: 
+  //	all reachable nodes are considered data structure elements
+  setspec e << vals (TOP.val) => $$ Reach (e)	
+  constructor {
+    TOP = new();
+    TOP->val = 0;
+  }
+}
+
+class ThreadInfo // thread descriptor
+// We use the annotation inside the following parentheses to specify
+// the field for parameter (data), return (data), operation name (op) and thread id (val).
+// Additionally, we let the tool know mytid is used to represent thread id for current verifying thread
+thread_desc (data == v && data == return_v && val == tid && op == tname && mytid == mytid)
+{ 
+  int val; // represent thread id
+  bool op; // represent Push or Pop
+  bool marked; // represent whether linearized
+  int data; // represent Push parameter or Pop return
+  
+  ThreadInfo tl; // thread descriptors stored in a linked list
+}
+
+ThreadInfo Head, Tail;
+
+bool Push;
+bool Pop;
+
+resource r () {// Elimination array declaration
+  // Specify the filtering function: 
+  //	all reachable nodes are considered data structure elements
+  setspec e << vals (Head) => $$ Reach (e)
+  constructor {
+  	Head = new();
+    Head->val = 0;
+    Head->marked = true;
+    Tail = new();
+    Tail->val = 12345;
+    Tail->marked = true;
+    Tail->tl = 0;
+    Head->tl = Tail;
+  }
+}
+
+
+void push (ThreadInfo push_desc, int mytid, int v) 
+// Specify a precondition:
+//	A push thread takes its thread descriptor, thread id and element v as inputs.
+//  We assume the descriptor is properly initialized.
+//  Specifically, we assume, in its descriptor, the thread id field is assigned to mytid.
+//	We also assume the marked field is set to false, i.e., the push thread is not linearized 
+// 	We also assume the data field is set to v, i.e., the descriptor should capture push's 
+//  argument
+requires 0 < mytid && mytid < 12345 
+	&& Push == true && Pop == false
+	* push_desc |-> val : mytid, op : Push, marked : false, data : v  
+// This method has no pure behavior	
+purespec r (false)
+// Specify the effectful behavior of this method
+effspec s (v :: vals_c (TOP.preval) = vals_c (TOP.postval) )
+{
+	int him;
+	bool eff;
+	bool cas;
+    
+   	ThreadInfo pred, curr;
+   	ThreadInfo qpred, pop_desc;
+  	int pid, qid;
+  	
+  	bool pop, qop, b;
+  	
+  	int k3; // <-- HACK: Make abstraction remember pred->val
+  	
+  	Node y, z, n;
+	
+	while (true) {
+		y = new();
+	  	with r {y->val = v;}
+	  	//while(true) {
+	    	with s { n = TOP->val; }
+	    	y->tl = n;
+	    	with s {
+	      		if (TOP->val == n) {
+	        		TOP->val = y;
+					return;
+	      		}
+	    	} 
+	  	//}
+	  	//return;
+		
+ 		pred = Head;
+  		with r { curr = Head->tl; k3 = -12345; pid = curr->val; }
+
+  		while (pid < mytid) {
+    		pred = curr;
+    		k3 = pid;
+    		with r { curr = curr->tl; pid = curr->val; }
+  		}
+
+  		if (pid == mytid) {
+  			push_desc = curr;
+  		}
+	 	else {
+    		//push_desc->tl = curr;
+    		//with r { 
+      		//	if (pred->tl == curr) {
+         	//		pred->tl = push_desc;
+         	//		k3 = k3;
+      		//	} else continue; 
+    		//}
+    		assume (false);
+    	}
+  	
+  		assume (him != mytid && 0 < him && him < 12345);
+		if (him != mytid) {
+			qpred = Head;
+			with r { pop_desc = Head->tl; qid = pop_desc->val; }
+
+  			while (qid < him) {
+    			qpred = pop_desc;
+    			with r { pop_desc = pop_desc->tl; qid = pop_desc->val; }
+  			}
+
+  			if (qid > him) continue;
+			
+			with r {pop = push_desc->op; qop = pop_desc->op;}
+			
+			if (qid == him && qop == Pop) {
+				with r {
+					//b = push_desc->marked;
+					if (push_desc->marked == true) {
+						assume (push_desc->op == Push);
+						push_desc->marked = false; // This thread should be deactivated.
+						cas = true;		
+					}
+					else {assume (push_desc->marked == false); return;}
+				}
+				if (cas) {
+					with r {
+						if (pop_desc->marked == true) { // q is still activated.
+							assume (push_desc->op == Push);
+							assume (push_desc->marked == false);
+							//assume (pop_desc->data == v);
+							pop_desc->data = v;
+							pop_desc->marked = false;  //<-------------------------------------- Annotation: q is linearised.
+							return;
+						}
+						else continue;
+					}
+				} else {assume (false);}
+			}
+		}
+		//delay ();		
+		with r {
+			//b = push_desc->marked;
+			//if (push_desc->marked == true) {
+			if (push_desc->marked == false) { //<================================Insert a bug that whether query cannot succeed for push.
+				push_desc->marked = false;
+				continue;
+			}
+			else {assume (push_desc->marked == false); return;}
+		}
+	}
+}
+
+
+int pop (ThreadInfo pop_desc, int mytid) 
+// Specify a precondition:
+//	A pop thread takes its thread descriptor and thread id as inputs.
+//  We assume the descriptor is properly initialized.
+//  Specifically, we assume, in the descriptor, the thread id field is assigned to mytid.
+//	We also assume the marked field is set to false, i.e., the pop thread is not linearized 
+requires 0 < mytid && mytid < 12345 
+	&& Push == true && Pop == false 
+	* pop_desc |-> val : mytid, op : Pop, marked : false, data : _data
+// Specify the pure behavior of this method: 
+//	if the data structure is empty, return EMPTY	
+purespec s (val(TOP) = 0 => Result = EMPTY)
+// Specify the effectful behavior of this method
+effspec s (return_v :: vals_c (TOP.postval) = vals_c (TOP.preval))
+{
+	int him;
+	bool eff;
+	bool cas;
+    
+   	ThreadInfo pred, curr;
+   	ThreadInfo qpred, push_desc;
+  	int pid, qid;
+  	
+  	bool pop, qop, b;
+  	
+  	int k3; // <-- HACK: Make abstraction remember pred->val
+  	
+  	Node y, z, n;
+	
+	while (true) {
+		//while(true) {
+			with s { y = TOP->val; }
+			if (y==0) {
+				return EMPTY;
+			} else {
+				with s { z = y->tl; }
+	
+				with s {
+					if (TOP->val == y && y->tl == z) {
+	  					TOP->val = z;
+	  					return y->val;
+					}
+				}
+			}
+		//}
+		//with s {pop_desc->data = y->val;}
+		//return;
+		//with s { return y->val; }
+
+		
+ 		pred = Head;
+  		with r { curr = Head->tl; k3 = -12345; pid = curr->val; }
+
+  		while (pid < mytid) {
+    		pred = curr;
+    		k3 = pid;
+    		with r { curr = curr->tl; pid = curr->val; }
+  		}
+
+  		if (pid == mytid) {
+  			pop_desc = curr;
+  		}
+	 	else {
+    		//pop_desc->tl = curr;
+    		//with r { 
+      		//	if (pred->tl == curr) {
+         	//		pred->tl = pop_desc;
+         	//		k3 = k3;
+      		//	} else continue; 
+    		//}
+    		assume (false);
+    	}
+  	
+  		assume (him != mytid && 0 < him && him < 12345);
+		if (him != mytid) {
+			qpred = Head;
+			with r { push_desc = Head->tl; qid = push_desc->val; }
+
+  			while (qid < him) {
+    			qpred = push_desc;
+    			with r { push_desc = push_desc->tl; qid = push_desc->val; }
+  			}
+
+  			if (qid > him) continue;
+			
+			with r {pop = pop_desc->op; qop = push_desc->op;}
+			
+			if (qid == him && qop != pop) {
+				with r {
+					//b = pop_desc->marked;
+					if (pop_desc->marked == true) {
+						pop_desc->marked = false; // This thread should be deactivated.
+						cas = true;		
+					}
+					else {
+						//him = him;
+						//assume (pop_desc->marked == true);
+						assume (pop_desc->marked == false); return pop_desc->data;
+					}
+				}
+				if (cas) {
+					with r {
+						if (push_desc->marked == true) { // q is stil activated.
+							assume (pop_desc->marked == false);
+							push_desc->marked = false;  //<-------------------------------------- Annotation: q is linerised.
+							//pop_desc->data = push_desc->data;
+							return push_desc->data;
+						}
+						else continue;
+					}
+				} else {assume (false);}
+				//else {
+				//	him = him;
+				//	assume (pop_desc->marked == true);
+				//	return;
+				//}
+			}
+		}
+		//delay ();
+		with r {
+			//b = pop_desc->marked;
+			if (pop_desc->marked == true) {  
+				pop_desc->marked = false;
+				continue;
+			}
+			else {assume (pop_desc->marked == false); return pop_desc->data;}
+		}
+	}
+}

@@ -1,0 +1,206 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wc-entries
+   xmlns="svn:">
+<entry
+   committed-rev="21243"
+   name=""
+   committed-date="2013-07-02T04:59:24.798636Z"
+   url="svn+ssh://zhu103@zed.cs.purdue.edu/p/sss/svn/MCPA/EXAMPLES"
+   last-author="zhu103"
+   kind="dir"
+   uuid="cfc9b378-9421-0410-8964-846f8f5da6ff"
+   repos="svn+ssh://zhu103@zed.cs.purdue.edu/p/sss/svn"
+   revision="22435"/>
+<entry
+   committed-rev="20836"
+   name="Treiber_CAS_stack.cav"
+   text-time="2013-04-19T20:18:06.000000Z"
+   committed-date="2013-04-19T21:00:59.465449Z"
+   checksum="3b938e0ede27479c1392e64e83d23453"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-04-19T20:58:49.000000Z"/>
+<entry
+   committed-rev="20704"
+   name="DGLMqueue_ext.cav"
+   text-time="2012-10-31T23:55:44.000000Z"
+   committed-date="2013-03-29T17:48:49.070568Z"
+   checksum="04ce22aca98f1f7748eccec9c85cead6"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="21241"
+   name="ccas.cav"
+   text-time="2013-06-30T22:52:38.000000Z"
+   committed-date="2013-07-01T00:31:29.308708Z"
+   checksum="1ae3a891f7f95b156b78e0242edbdd52"
+   last-author="zhu103"
+   kind="file"/>
+<entry
+   committed-rev="20836"
+   name="Treiber_DCAS_stack.cav"
+   text-time="2013-04-19T20:18:11.000000Z"
+   committed-date="2013-04-19T21:00:59.465449Z"
+   checksum="44a100c1b5e26a3433dc9719df2e4bf0"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-04-19T20:58:59.000000Z"/>
+<entry
+   committed-rev="20835"
+   name="2lock_queue.cav"
+   text-time="2013-04-19T20:16:04.000000Z"
+   committed-date="2013-04-19T20:57:49.590117Z"
+   checksum="c29e450b23a508177d4b8cfb0553823f"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="20835"
+   name="Array.cav"
+   text-time="2013-04-01T00:49:48.000000Z"
+   committed-date="2013-04-19T20:57:49.590117Z"
+   checksum="850c0dc04147ee7d84d7379d52e67a2f"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="20704"
+   name="stack_spec.cav"
+   text-time="2012-10-31T23:55:44.000000Z"
+   committed-date="2013-03-29T17:48:49.070568Z"
+   checksum="fb548d5c612248c4af6b31bfb9fef5f3"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="20835"
+   name="Vechev_CAS_set.cav"
+   text-time="2013-04-17T05:03:26.000000Z"
+   committed-date="2013-04-19T20:57:49.590117Z"
+   checksum="972830e7039bd1171e060ef7b36f7ccd"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="21243"
+   name="HW_queue.cav"
+   text-time="2013-07-02T02:54:22.000000Z"
+   committed-date="2013-07-02T04:59:24.798636Z"
+   checksum="e2417e61630b14d25e3f65e16d057af2"
+   last-author="zhu103"
+   kind="file"/>
+<entry
+   committed-rev="20836"
+   name="MSqueue_counter.cav"
+   text-time="2013-04-19T20:17:35.000000Z"
+   committed-date="2013-04-19T21:00:59.465449Z"
+   checksum="447380e7b67f803cd5aac3ca2d34e11e"
+   last-author="zhu103"
+   kind="file"/>
+<entry
+   committed-rev="20835"
+   name="MSqueue.cav"
+   text-time="2013-04-19T20:13:20.000000Z"
+   committed-date="2013-04-19T20:57:49.590117Z"
+   checksum="f2b90a44c1204e9c59d9ec5a715d5fa5"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="20835"
+   name="Vechev_DCAS_set.cav"
+   text-time="2013-04-18T13:39:17.000000Z"
+   committed-date="2013-04-19T20:57:49.590117Z"
+   checksum="d103eb3884514d67311b5de79bc4a8e2"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="20836"
+   name="DGLMqueue_counter.cav"
+   text-time="2013-04-19T20:23:53.000000Z"
+   committed-date="2013-04-19T21:00:59.465449Z"
+   checksum="850288956a2cf5173a7ce9df0f01de7f"
+   last-author="zhu103"
+   kind="file"/>
+<entry
+   committed-rev="20836"
+   name="Lockcouping_set.cav"
+   text-time="2013-04-19T02:08:46.000000Z"
+   committed-date="2013-04-19T21:00:59.465449Z"
+   checksum="76fb126511e90640d0fdfb609ba94745"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-04-19T21:00:10.000000Z"/>
+<entry
+   committed-rev="20835"
+   name="DGLMqueue.cav"
+   text-time="2013-04-18T22:08:59.000000Z"
+   committed-date="2013-04-19T20:57:49.590117Z"
+   checksum="b4c4e71a790a29549302aa2659e87c7f"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="21241"
+   name="HSY_stack.cav"
+   text-time="2013-06-30T18:23:53.000000Z"
+   committed-date="2013-07-01T00:31:29.308708Z"
+   checksum="f5314dbd9b9aa8b330b7b36694f42462"
+   last-author="zhu103"
+   kind="file"/>
+<entry
+   committed-rev="20836"
+   name="Lazy_set.cav"
+   text-time="2013-04-16T23:05:19.000000Z"
+   committed-date="2013-04-19T21:00:59.465449Z"
+   checksum="7fc1dc766ed43da4ed9a488f54bb3a8a"
+   last-author="zhu103"
+   kind="file"/>
+<entry
+   committed-rev="20704"
+   name="queue_spec.cav"
+   text-time="2012-10-31T23:55:44.000000Z"
+   committed-date="2013-03-29T17:48:49.070568Z"
+   checksum="fa72072ca122af6ee53f38077734cf0f"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="20704"
+   name="2lock_queue_ext.cav"
+   text-time="2012-10-31T23:55:44.000000Z"
+   committed-date="2013-03-29T17:48:49.070568Z"
+   checksum="9b78e7a2909c05640e0b68cb9476f128"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="20836"
+   name="Optimistic_set.cav"
+   text-time="2013-04-16T02:05:35.000000Z"
+   committed-date="2013-04-19T21:00:59.465449Z"
+   checksum="ef84b2573a06e76c27824d41cdf2df03"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-04-19T21:00:24.000000Z"/>
+<entry
+   committed-rev="20704"
+   name="MSqueue_ext.cav"
+   text-time="2013-04-07T20:02:33.000000Z"
+   committed-date="2013-03-29T17:48:49.070568Z"
+   checksum="04a36d156d27d8407b41f99417483cc4"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+<entry
+   committed-rev="20704"
+   name="set_spec.cav"
+   text-time="2012-10-31T23:55:44.000000Z"
+   committed-date="2013-03-29T17:48:49.070568Z"
+   checksum="56b04c63942d05aebe42d038716e463b"
+   last-author="zhu103"
+   kind="file"
+   prop-time="2013-03-29T17:48:24.000000Z"/>
+</wc-entries>

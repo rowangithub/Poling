@@ -1,0 +1,140 @@
+// A variant of the non-blocking queue implementation 
+// due to Michael and Scott.
+//
+// See paper:
+//   S. Doherty, L. Groves, V. Luchangco, and M. Moir.
+//   Formal verification of a practical lock-free queue algorithm.
+//   FORTE 2004.
+//
+// Notes:
+//   - Encoded the counters.
+//
+
+#include "queue_spec.cav"
+
+class Node {
+  int val;
+  Node tl;
+  
+  int age;
+}
+
+class Queue {
+  Node head;
+  Node tail;
+}
+
+Queue Q;
+
+resource r() {
+  // Specify the filtering function: 
+  //	all reachable nodes are considered data structure elements
+  //    i.e., if e is in the data structure (vals (Head)), 
+  //		  e is a reachable element.
+  setspec e << vals (Q.head) => $$ Reach (e)
+  constructor {
+    Node node;
+    node = new();
+    node->tl = NULL;
+    Q=new();
+    Q->head = node;
+    Q->tail = node;
+  }
+}
+
+
+
+// -----------------------------------------------------------------------------
+
+void enqueue(int value) 
+// This method has no pure behavior
+purespec r (false)
+// Specify the effectful behavior of enqueue method
+// i.e., the concatenation of the pre-state of the data structure and value
+// equals to the post-state of the data structure
+// The concatenation operator denotes that value is put in the end of the queue.
+effspec r (vals_c (Q.prehead) :: value = vals_c (Q.posthead) )
+{
+  Node node, next, mytail;
+  int b1;
+  int temp;
+  node = new();
+  node->val = value;
+  node->tl = NULL;
+  while(true) {
+    with r { mytail = Q->tail; }
+    with r { next = mytail->tl; }
+    with r { if (Q->tail == mytail ) b1 = 1; else b1 = 0; }
+    if (b1!=0) {
+      if (next == NULL) {
+		node->age = temp;   // Increment age
+	  	with r {
+	  	if (mytail->tl == next) {
+	  		assume (Q->tail == mytail);
+	    	mytail->tl = node;
+	    	break;
+	  		}
+		}
+      } else {
+		with r {
+	  	if (Q->tail == mytail ) {
+	  		assume (next->age == next->age);
+		    next->age = temp,  // Increment age
+	    	Q->tail = next;
+	  	}
+		}
+      }
+    } 
+  }
+  with r {
+    if (Q->tail == mytail ) {
+      node->age = temp,   // Increment age
+      Q->tail = node;
+    }
+  }
+  return;
+}
+
+// -----------------------------------------------------------------------------
+
+int dequeue()
+// Specify the pure behavior of this method: 
+//	if the data structure is empty, return EMPTY
+purespec r ((Q.head.posttl == 0) => Result = EMPTY)
+// Specify the effectful behavior of dequeue method
+// i.e., the concatenation of pval and the post-state of the data structure
+// equals to the pre-state of the data structure.
+// The concatenation operator denotes that pval is chosen as the first in the queue.
+effspec r (pval :: vals_c (Q.head.posttl) = vals_c (Q.head.pretl) )
+{
+  Node next, myhead, mytail;
+  int pval;
+  int temp;
+  while(true) {
+    with r { myhead = Q->head; next = myhead->tl; }
+    with r { if (Q->head != myhead) continue; }
+    if (next == NULL)
+      return EMPTY; 
+    with r { pval = next->val; }
+    with r {
+      if (Q->head == myhead ) { 
+        assume (next->age == next->age);
+        next->age = temp,
+        Q->head = next; 
+      }
+      else continue;
+    }
+    with r { mytail = Q->tail; }
+    if (myhead == mytail) {
+      with r {
+        if (Q->tail == mytail ) {
+          assume (next->age == next->age);
+          next->age = temp,
+          Q->tail = next;
+        }
+      }
+    }
+    return pval;
+  }
+}
+
