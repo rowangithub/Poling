@@ -65,9 +65,9 @@ For HSY_stack.cav, you must provide Poling a data structure invariant. To do so,
 (We have already specified the invariant required in HSY_stack.inv 
 and please check HSY_stack.cav for more explanations about why the invariant is needed).
 
-===[ Buggy benchmarks ]====================================================
+===[ Programs that are not linearizable ]========================
 
-We also include a set of buggy programs (which are not linearizable implementations) in 
+We also include a set of programs which are not linearizable implementations in 
 EXAMPLE/buggy/ directory. We give why the program is buggy in the comment in beginning of 
 the program text and Poling is able to disprove such programs.
 
